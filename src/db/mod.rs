@@ -1,4 +1,5 @@
 pub mod models;
+pub mod repository;
 
 use sqlx::{postgres::PgPoolOptions, PgPool};
 
