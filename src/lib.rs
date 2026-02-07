@@ -14,10 +14,15 @@ use tower_http::trace::TraceLayer;
 pub async fn run(config: config::Config) -> anyhow::Result<()> {
     telemetry::init_tracing(&config.rust_log);
 
+    // Initialize database connection pool
+    let db = db::init_pool(&config.database_url).await?;
+    tracing::info!("Database connection pool initialized");
+
     // Initialize Spotify OAuth state
     let spotify_state = spotify::routes::SpotifyState {
         oauth_client: spotify::oauth::build_oauth_client(&config),
         state_store: Arc::new(RwLock::new(HashMap::new())),
+        db,
     };
 
     tracing::info!("Initialized Spotify OAuth client");

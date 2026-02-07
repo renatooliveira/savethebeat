@@ -1,11 +1,19 @@
+use crate::db::repository::upsert_user_auth;
 use crate::error::AppError;
-use crate::spotify::oauth::{StateStore, generate_state_token, store_state};
+use crate::spotify::oauth::{
+    StateStore, generate_state_token, store_state, validate_and_consume_state,
+};
 use axum::{
     extract::{Query, State},
-    response::Redirect,
+    response::{Html, Redirect},
 };
-use oauth2::{CsrfToken, Scope, basic::BasicClient};
+use chrono::{Duration, Utc};
+use oauth2::{
+    AuthorizationCode, CsrfToken, Scope, TokenResponse, basic::BasicClient,
+    reqwest::async_http_client,
+};
 use serde::Deserialize;
+use sqlx::PgPool;
 
 /// Query parameters for /spotify/connect endpoint
 #[derive(Debug, Deserialize)]
@@ -19,6 +27,7 @@ pub struct ConnectQuery {
 pub struct SpotifyState {
     pub oauth_client: BasicClient,
     pub state_store: StateStore,
+    pub db: PgPool,
 }
 
 /// Initiates Spotify OAuth flow
@@ -80,6 +89,183 @@ pub async fn connect(
     Ok(Redirect::to(auth_url.as_str()))
 }
 
+/// Query parameters for /spotify/callback endpoint
+#[derive(Debug, Deserialize)]
+pub struct CallbackQuery {
+    pub code: String,
+    pub state: String,
+}
+
+/// Handles Spotify OAuth callback
+///
+/// # Endpoint
+/// GET /spotify/callback?code=<CODE>&state=<STATE>
+///
+/// # Flow
+/// 1. Validate and consume state token (CSRF protection)
+/// 2. Extract Slack workspace and user IDs from state
+/// 3. Exchange authorization code for access/refresh tokens
+/// 4. Calculate token expiry with 5-minute buffer
+/// 5. Upsert tokens to database
+/// 6. Return success HTML page
+///
+/// # Query Parameters
+/// - `code`: Authorization code from Spotify
+/// - `state`: State token (must match stored token)
+///
+/// # Returns
+/// HTML success page
+///
+/// # Errors
+/// - 400 Bad Request if state is invalid or expired
+/// - 500 Internal Server Error if token exchange or database operation fails
+pub async fn callback(
+    State(state): State<SpotifyState>,
+    Query(params): Query<CallbackQuery>,
+) -> Result<Html<String>, AppError> {
+    tracing::info!("Received Spotify OAuth callback");
+
+    // Validate and consume state token
+    let (workspace_id, user_id) = validate_and_consume_state(&state.state_store, &params.state)?;
+
+    tracing::info!(
+        slack_workspace_id = %workspace_id,
+        slack_user_id = %user_id,
+        "Validated OAuth state"
+    );
+
+    // Exchange authorization code for tokens
+    tracing::debug!("Exchanging authorization code for tokens");
+
+    let token_result = state
+        .oauth_client
+        .exchange_code(AuthorizationCode::new(params.code))
+        .request_async(async_http_client)
+        .await
+        .map_err(|e| {
+            tracing::error!("Token exchange failed: {:?}", e);
+            AppError::SpotifyApi(format!("Failed to exchange authorization code: {}", e))
+        })?;
+
+    let access_token = token_result.access_token().secret().to_string();
+    let refresh_token = token_result
+        .refresh_token()
+        .ok_or_else(|| {
+            tracing::error!("No refresh token in response");
+            AppError::SpotifyApi("No refresh token received".to_string())
+        })?
+        .secret()
+        .to_string();
+
+    // Calculate token expiry with 5-minute buffer
+    let expires_in_seconds = token_result
+        .expires_in()
+        .ok_or_else(|| {
+            tracing::error!("No expires_in in token response");
+            AppError::SpotifyApi("No expiry time in token response".to_string())
+        })?
+        .as_secs() as i64;
+
+    let expires_at = Utc::now() + Duration::seconds(expires_in_seconds) - Duration::minutes(5);
+
+    tracing::info!(
+        expires_in_seconds = expires_in_seconds,
+        expires_at = %expires_at,
+        "Received tokens from Spotify"
+    );
+
+    // Store tokens in database
+    let user_auth = upsert_user_auth(
+        &state.db,
+        &workspace_id,
+        &user_id,
+        None, // spotify_user_id - we'll get this later when we call /v1/me
+        &access_token,
+        &refresh_token,
+        expires_at,
+    )
+    .await
+    .map_err(|e| {
+        tracing::error!("Database upsert failed: {:?}", e);
+        AppError::Database(e)
+    })?;
+
+    tracing::info!(
+        user_auth_id = %user_auth.id,
+        slack_workspace_id = %workspace_id,
+        slack_user_id = %user_id,
+        "Successfully stored Spotify tokens"
+    );
+
+    // Return success HTML page
+    let html = format!(
+        r#"<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Spotify Connected - savethebeat</title>
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #1DB954 0%, #191414 100%);
+        }}
+        .container {{
+            background: white;
+            padding: 3rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+        }}
+        h1 {{
+            color: #1DB954;
+            margin-top: 0;
+            font-size: 2rem;
+        }}
+        p {{
+            color: #191414;
+            line-height: 1.6;
+            margin: 1rem 0;
+        }}
+        .success-icon {{
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }}
+        .workspace-info {{
+            background: #f6f6f6;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            color: #666;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-icon">✅</div>
+        <h1>Spotify Connected!</h1>
+        <p>Your Spotify account has been successfully connected to savethebeat.</p>
+        <p>You can now close this window and return to Slack.</p>
+        <div class="workspace-info">
+            <strong>Workspace:</strong> {}<br>
+            <strong>User:</strong> {}
+        </div>
+    </div>
+</body>
+</html>"#,
+        workspace_id, user_id
+    );
+
+    Ok(Html(html))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -88,11 +274,11 @@ mod tests {
     use std::collections::HashMap;
     use std::sync::{Arc, RwLock};
 
-    fn setup_test_state() -> SpotifyState {
+    async fn setup_test_state() -> SpotifyState {
         let config = Config {
             port: 3000,
             host: "0.0.0.0".to_string(),
-            database_url: "postgresql://localhost/test".to_string(),
+            database_url: "postgresql://localhost/savethebeat_test".to_string(),
             spotify_client_id: "test_client_id".to_string(),
             spotify_client_secret: "test_client_secret".to_string(),
             spotify_redirect_uri: "http://localhost:3000/spotify/callback".to_string(),
@@ -102,15 +288,22 @@ mod tests {
             rust_log: "info".to_string(),
         };
 
+        // Create a lazy database pool for tests (won't connect until needed)
+        let db = sqlx::postgres::PgPoolOptions::new()
+            .max_connections(1)
+            .connect_lazy(&config.database_url)
+            .unwrap();
+
         SpotifyState {
             oauth_client: build_oauth_client(&config),
             state_store: Arc::new(RwLock::new(HashMap::new())),
+            db,
         }
     }
 
     #[tokio::test]
     async fn test_connect_generates_redirect() {
-        let state = setup_test_state();
+        let state = setup_test_state().await;
         let params = ConnectQuery {
             slack_workspace_id: "T123".to_string(),
             slack_user_id: "U456".to_string(),
@@ -132,7 +325,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_connect_redirect_url_format() {
-        let state = setup_test_state();
+        let state = setup_test_state().await;
         let params = ConnectQuery {
             slack_workspace_id: "T123".to_string(),
             slack_user_id: "U456".to_string(),
@@ -147,7 +340,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_connect_multiple_users() {
-        let state = setup_test_state();
+        let state = setup_test_state().await;
 
         // Connect first user
         let params1 = ConnectQuery {
@@ -168,5 +361,19 @@ mod tests {
         // Verify both states are stored
         let store = state.state_store.read().unwrap();
         assert_eq!(store.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_callback_invalid_state() {
+        let state = setup_test_state().await;
+        let params = CallbackQuery {
+            code: "test_code".to_string(),
+            state: "invalid_state_token".to_string(),
+        };
+
+        let result = callback(State(state), Query(params)).await;
+
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), AppError::OAuthStateNotFound));
     }
 }
