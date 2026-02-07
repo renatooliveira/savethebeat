@@ -1,0 +1,81 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO user_auth (\n            slack_workspace_id,\n            slack_user_id,\n            spotify_user_id,\n            access_token,\n            refresh_token,\n            expires_at\n        )\n        VALUES ($1, $2, $3, $4, $5, $6)\n        ON CONFLICT (slack_workspace_id, slack_user_id)\n        DO UPDATE SET\n            spotify_user_id = EXCLUDED.spotify_user_id,\n            access_token = EXCLUDED.access_token,\n            refresh_token = EXCLUDED.refresh_token,\n            expires_at = EXCLUDED.expires_at,\n            updated_at = NOW()\n        RETURNING *\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "slack_workspace_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "slack_user_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "spotify_user_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "access_token",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "refresh_token",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "expires_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 7,
+        "name": "paused",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 8,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "030a5db827f1a01a8fb173966ccb4b6e5912ca6842354bb2b2baf136f3a21da4"
+}
