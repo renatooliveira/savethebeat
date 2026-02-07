@@ -21,7 +21,7 @@ Slack ↔ Spotify integration bot that allows users to save Spotify tracks to th
 
 **Goal:** Connect Slack user to Spotify; tokens stored + refresh works
 
-**Status:** Phase 1.1 Complete ✅
+**Status:** Phases 1.1-1.5, 1.7 Complete ✅ | Phase 1.6, 1.8 Pending
 
 #### Phase 1.1: Database Setup ✅
 - [x] Add sqlx, uuid, chrono dependencies
@@ -31,53 +31,92 @@ Slack ↔ Spotify integration bot that allows users to save Spotify tracks to th
 - [x] Update Config to require database_url and Spotify OAuth fields
 - [x] DB pool initialization module
 - [x] PostgreSQL database created and migrated
+- [x] sqlx offline mode setup (.sqlx/ query cache)
 
-#### Phase 1.2: Repository Layer
-- [ ] Create `src/db/repository.rs` with CRUD operations:
-  - `get_user_auth(pool, workspace_id, user_id) -> Result<Option<UserAuth>>`
-  - `upsert_user_auth(...) -> Result<UserAuth>`
-  - `update_tokens(...) -> Result<()>`
+**PR:** #2 - Implement Phase 1.2: Repository layer with CRUD operations
 
-#### Phase 1.3: OAuth Infrastructure
-- [ ] Update `src/error.rs` with OAuth/DB error variants
-- [ ] Create `src/spotify/mod.rs`
-- [ ] Create `src/spotify/oauth.rs` with:
-  - OAuth client builder
-  - State store (Arc<RwLock<HashMap>>)
-  - State generation and validation
+#### Phase 1.2: Repository Layer ✅
+- [x] Create `src/db/repository.rs` with CRUD operations:
+  - [x] `get_user_auth(pool, workspace_id, user_id) -> Result<Option<UserAuth>>`
+  - [x] `upsert_user_auth(...) -> Result<UserAuth>`
+  - [x] `update_tokens(...) -> Result<()>`
+- [x] Comprehensive #[sqlx::test] tests
+- [x] Unique constraint handling
 
-#### Phase 1.4: Spotify Connect Endpoint
-- [ ] Create `src/spotify/routes.rs`
-- [ ] Implement `GET /spotify/connect?slack_workspace_id=X&slack_user_id=Y`
-- [ ] Wire routes in `src/routes/mod.rs`
+**PR:** #2 - Implement Phase 1.2: Repository layer with CRUD operations
 
-#### Phase 1.5: Spotify Callback Endpoint
-- [ ] Implement `GET /spotify/callback?code=X&state=Y`
-  - Validate state
-  - Exchange code for tokens
-  - Store in database
-  - Return success page
+#### Phase 1.3: OAuth Infrastructure ✅
+- [x] Update `src/error.rs` with OAuth/DB error variants
+- [x] Create `src/spotify/mod.rs`
+- [x] Create `src/spotify/oauth.rs` with:
+  - [x] OAuth client builder (`build_oauth_client`)
+  - [x] State store (Arc<RwLock<HashMap>>)
+  - [x] State generation (`generate_state_token` - 32 bytes, base64)
+  - [x] State validation (`validate_and_consume_state`)
+  - [x] CSRF protection (one-time use, 10-minute TTL)
+- [x] Unit tests for all OAuth functions
 
-#### Phase 1.6: Token Refresh Helper
+**PR:** #4 - Phase 1.3: OAuth Infrastructure
+
+#### Phase 1.4: Spotify Connect Endpoint ✅
+- [x] Create `src/spotify/routes.rs`
+- [x] Implement `GET /spotify/connect?slack_workspace_id=X&slack_user_id=Y`
+  - [x] Generate and store state token
+  - [x] Build Spotify authorization URL
+  - [x] Redirect to Spotify with `user-library-modify` scope
+- [x] Wire routes in `src/routes/mod.rs`
+- [x] Unit tests for connect endpoint
+
+**PR:** #5 - Phase 1.4: Spotify Connect Endpoint
+
+#### Phase 1.5: Spotify Callback Endpoint ✅
+- [x] Implement `GET /spotify/callback?code=X&state=Y`
+  - [x] Validate and consume state token
+  - [x] Exchange authorization code for tokens
+  - [x] Calculate token expiry with 5-minute buffer
+  - [x] Store tokens in database via `upsert_user_auth`
+  - [x] Return styled HTML success page
+- [x] Create `templates/spotify_success.html` template
+- [x] Use `include_str!` for compile-time template embedding
+- [x] Unit tests for callback validation
+
+**PR:** #6 - Phase 1.5: Spotify Callback Endpoint
+
+#### Phase 1.6: Token Refresh Helper ⏳ PENDING
 - [ ] Create `src/spotify/client.rs` with:
-  - `refresh_access_token()` - refresh expired tokens
-  - `ensure_valid_token()` - get valid token (refresh if needed)
+  - [ ] `refresh_access_token()` - refresh expired tokens
+  - [ ] `ensure_valid_token()` - get valid token (refresh if needed)
 
-#### Phase 1.7: Application State Setup
-- [ ] Update `src/lib.rs` with AppState
-- [ ] Initialize DB pool, OAuth client, StateStore
-- [ ] Pass state to routes
+#### Phase 1.7: Application State Setup ✅
+- [x] Update `src/lib.rs` with SpotifyState
+- [x] Initialize DB pool, OAuth client, StateStore
+- [x] Pass state to routes via `with_state()`
+- [x] Wire Spotify routes into main router
 
-#### Phase 1.8: Testing & Verification
+**Completed in:** PRs #5 and #6
+
+#### Phase 1.8: Testing & Verification ⏳ PENDING
 - [ ] Complete OAuth flow end-to-end
 - [ ] Verify token refresh works
+- [ ] Test Spotify API calls with tokens
 - [ ] All CI checks pass
 
 **Definition of Done:**
-- User can complete Spotify OAuth flow
-- Tokens persist in database across restarts
-- Expired tokens automatically refresh
-- Spotify API call succeeds with refreshed token
+- ✅ User can complete Spotify OAuth flow (/connect → Spotify → /callback)
+- ✅ Tokens persist in database across restarts (user_auth table)
+- ⏳ Expired tokens automatically refresh (Phase 1.6 pending)
+- ⏳ Spotify API call succeeds with refreshed token (Phase 1.8 pending)
+
+**Completed:**
+- OAuth flow fully functional (connect + callback)
+- State management with CSRF protection
+- Database persistence with upsert logic
+- Token expiry tracking with 5-minute buffer
+- Styled HTML success page
+
+**Remaining:**
+- Token refresh functionality
+- End-to-end testing with real Spotify API
 
 ---
 
