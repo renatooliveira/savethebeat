@@ -4,27 +4,62 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use serde_json::json;
+use thiserror::Error;
 
-#[derive(Debug)]
-pub struct AppError(anyhow::Error);
+/// Application-specific errors with HTTP status code mappings
+#[derive(Debug, Error)]
+pub enum AppError {
+    #[error("OAuth state not found")]
+    OAuthStateNotFound,
+
+    #[error("OAuth state expired")]
+    OAuthStateExpired,
+
+    #[error("Database error: {0}")]
+    Database(#[from] sqlx::Error),
+
+    #[error("Spotify API error: {0}")]
+    SpotifyApi(String),
+
+    #[error("Invalid request: {0}")]
+    BadRequest(String),
+
+    #[error("Internal server error: {0}")]
+    Internal(#[from] anyhow::Error),
+}
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
-        tracing::error!("Application error: {:?}", self.0);
+        let (status, error_message) = match &self {
+            AppError::OAuthStateNotFound => {
+                tracing::warn!("OAuth state not found");
+                (StatusCode::BAD_REQUEST, "Invalid or expired OAuth state")
+            }
+            AppError::OAuthStateExpired => {
+                tracing::warn!("OAuth state expired");
+                (
+                    StatusCode::BAD_REQUEST,
+                    "OAuth state expired, please try again",
+                )
+            }
+            AppError::Database(err) => {
+                tracing::error!("Database error: {:?}", err);
+                (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error")
+            }
+            AppError::SpotifyApi(msg) => {
+                tracing::error!("Spotify API error: {}", msg);
+                (StatusCode::BAD_GATEWAY, "Spotify API error")
+            }
+            AppError::BadRequest(msg) => {
+                tracing::warn!("Bad request: {}", msg);
+                (StatusCode::BAD_REQUEST, msg.as_str())
+            }
+            AppError::Internal(err) => {
+                tracing::error!("Internal error: {:?}", err);
+                (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error")
+            }
+        };
 
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "error": "Internal server error" })),
-        )
-            .into_response()
-    }
-}
-
-impl<E> From<E> for AppError
-where
-    E: Into<anyhow::Error>,
-{
-    fn from(err: E) -> Self {
-        Self(err.into())
+        (status, Json(json!({ "error": error_message }))).into_response()
     }
 }

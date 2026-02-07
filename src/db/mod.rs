@@ -1,7 +1,7 @@
 pub mod models;
 pub mod repository;
 
-use sqlx::{postgres::PgPoolOptions, PgPool};
+use sqlx::{PgPool, postgres::PgPoolOptions};
 
 pub async fn init_pool(database_url: &str) -> anyhow::Result<PgPool> {
     tracing::info!("Initializing database connection pool");

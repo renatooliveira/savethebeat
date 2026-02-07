@@ -259,14 +259,7 @@ mod tests {
 
         // Update tokens
         let new_expires_at = Utc::now() + chrono::Duration::hours(2);
-        update_tokens(
-            &pool,
-            user.id,
-            "new_access",
-            "new_refresh",
-            new_expires_at,
-        )
-        .await?;
+        update_tokens(&pool, user.id, "new_access", "new_refresh", new_expires_at).await?;
 
         // Fetch and verify
         let updated_user = get_user_auth(&pool, "T123", "U456").await?.unwrap();

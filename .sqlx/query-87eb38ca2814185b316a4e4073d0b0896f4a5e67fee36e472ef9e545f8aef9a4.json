@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE user_auth\n        SET\n            access_token = $1,\n            refresh_token = $2,\n            expires_at = $3,\n            updated_at = NOW()\n        WHERE id = $4\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Timestamptz",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "87eb38ca2814185b316a4e4073d0b0896f4a5e67fee36e472ef9e545f8aef9a4"
+}
