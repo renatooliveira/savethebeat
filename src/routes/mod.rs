@@ -5,6 +5,18 @@ pub fn routes() -> Router {
     Router::new().route("/health", get(health))
 }
 
+/// Build Spotify OAuth routes
+///
+/// Requires SpotifyState to be provided via with_state
+///
+/// # Routes
+/// - GET /spotify/connect - Initiate OAuth flow
+pub fn spotify_routes() -> Router<crate::spotify::routes::SpotifyState> {
+    use crate::spotify::routes::connect;
+
+    Router::new().route("/spotify/connect", get(connect))
+}
+
 async fn health() -> Json<serde_json::Value> {
     Json(json!({
         "status": "ok",
