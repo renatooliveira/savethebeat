@@ -2,6 +2,56 @@
 
 This document provides coding standards and best practices for AI agents and developers working on the savethebeat project.
 
+---
+
+## ⚠️ CRITICAL: Workflow Rules
+
+**ALL changes MUST go through Pull Requests. NO direct pushes to main.**
+
+1. **Create a feature branch** for your changes
+2. **Commit your changes** to the feature branch
+3. **Push the branch** to GitHub
+4. **Create a Pull Request** using `gh` CLI or GitHub web interface
+5. **Assign @renatooliveira as reviewer** (REQUIRED)
+6. **Wait for approval** before merging
+
+**Example workflow:**
+```bash
+# Create feature branch
+git checkout -b feature/phase-1-2-repository
+
+# Make changes and commit
+git add .
+git commit -m "Implement Phase 1.2: Repository layer"
+
+# Push branch
+git push -u origin feature/phase-1-2-repository
+
+# Create PR with reviewer assigned
+gh pr create --title "Implement Phase 1.2: Repository layer" \
+             --body "Add CRUD operations for user_auth table" \
+             --assignee renatooliveira \
+             --reviewer renatooliveira
+```
+
+**This rule applies to:**
+- ✅ Code changes
+- ✅ Documentation updates
+- ✅ Configuration changes
+- ✅ Database migrations
+- ✅ Everything else
+
+**Documentation updates (update whenever necessary):**
+- Update `PLAN.md` to mark completed tasks with ✅
+- Update `AGENTS.md` if new patterns or practices are introduced
+- Update `README.md` if setup instructions change
+- Add inline code documentation (`///`) for new public functions
+- Update this file's "Last Updated" section when significant changes are made
+
+**No direct pushes to main. All changes via PR.**
+
+---
+
 ## Project Context
 
 **savethebeat** is a Slack ↔ Spotify integration bot built with Rust, using:
@@ -371,7 +421,30 @@ Before submitting code, ensure:
 3. **Branch strategy:**
    - `main`: stable, working code
    - Feature branches: `feature/oauth-flow`, `fix/token-refresh`
-   - Always create PR for review
+   - **NEVER push directly to main**
+
+4. **Pull Request Workflow (REQUIRED):**
+   - **Always create a PR for all changes**
+   - Branch from main: `git checkout -b feature/your-feature`
+   - Make your commits on the feature branch
+   - Push branch: `git push -u origin feature/your-feature`
+   - Create PR via GitHub CLI or web interface
+   - **Always assign @renatooliveira as reviewer**
+   - Wait for approval before merging
+
+   **Using GitHub CLI (gh):**
+   ```bash
+   # After committing changes
+   git push -u origin feature/your-feature
+
+   # Create PR and assign reviewer
+   gh pr create --title "Your PR title" \
+                --body "Description of changes" \
+                --assignee renatooliveira \
+                --reviewer renatooliveira
+   ```
+
+   **Important:** This applies to all code changes, documentation updates, and configuration changes. No exceptions.
 
 ---
 
