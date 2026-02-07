@@ -89,6 +89,22 @@ pub async fn connect(
     Ok(Redirect::to(auth_url.as_str()))
 }
 
+/// Render the success page with workspace and user information
+///
+/// # Arguments
+/// * `workspace_id` - Slack workspace ID
+/// * `user_id` - Slack user ID
+///
+/// # Returns
+/// HTML string with placeholders replaced
+fn render_success_page(workspace_id: &str, user_id: &str) -> String {
+    const TEMPLATE: &str = include_str!("../../templates/spotify_success.html");
+
+    TEMPLATE
+        .replace("{{WORKSPACE_ID}}", workspace_id)
+        .replace("{{USER_ID}}", user_id)
+}
+
 /// Query parameters for /spotify/callback endpoint
 #[derive(Debug, Deserialize)]
 pub struct CallbackQuery {
@@ -198,70 +214,7 @@ pub async fn callback(
     );
 
     // Return success HTML page
-    let html = format!(
-        r#"<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Spotify Connected - savethebeat</title>
-    <style>
-        body {{
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background: linear-gradient(135deg, #1DB954 0%, #191414 100%);
-        }}
-        .container {{
-            background: white;
-            padding: 3rem;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            text-align: center;
-            max-width: 400px;
-        }}
-        h1 {{
-            color: #1DB954;
-            margin-top: 0;
-            font-size: 2rem;
-        }}
-        p {{
-            color: #191414;
-            line-height: 1.6;
-            margin: 1rem 0;
-        }}
-        .success-icon {{
-            font-size: 4rem;
-            margin-bottom: 1rem;
-        }}
-        .workspace-info {{
-            background: #f6f6f6;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-top: 1.5rem;
-            font-size: 0.9rem;
-            color: #666;
-        }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="success-icon">✅</div>
-        <h1>Spotify Connected!</h1>
-        <p>Your Spotify account has been successfully connected to savethebeat.</p>
-        <p>You can now close this window and return to Slack.</p>
-        <div class="workspace-info">
-            <strong>Workspace:</strong> {}<br>
-            <strong>User:</strong> {}
-        </div>
-    </div>
-</body>
-</html>"#,
-        workspace_id, user_id
-    );
+    let html = render_success_page(&workspace_id, &user_id);
 
     Ok(Html(html))
 }
