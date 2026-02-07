@@ -8,14 +8,18 @@ pub struct Config {
     #[serde(default = "default_host")]
     pub host: String,
 
-    // Future phases (Optional fields)
-    pub database_url: Option<String>,
+    // Database (Phase 1+)
+    pub database_url: String,
+
+    // Spotify OAuth (Phase 1+)
+    pub spotify_client_id: String,
+    pub spotify_client_secret: String,
+    pub spotify_redirect_uri: String,
+    pub base_url: String,
+
+    // Slack (Phase 2+)
     pub slack_signing_secret: Option<String>,
     pub slack_bot_token: Option<String>,
-    pub spotify_client_id: Option<String>,
-    pub spotify_client_secret: Option<String>,
-    pub spotify_redirect_uri: Option<String>,
-    pub base_url: Option<String>,
 
     #[serde(default = "default_rust_log")]
     pub rust_log: String,
