@@ -5,7 +5,7 @@ Slack ↔ Spotify integration bot
 ## Development
 
 ### Prerequisites
-- Rust 1.70+ (edition 2021)
+- Rust 1.93+ (edition 2024)
 
 ### Setup
 1. Copy environment variables:
