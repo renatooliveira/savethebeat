@@ -8,18 +8,19 @@ When users share Spotify links in Slack conversations, they can mention `@saveth
 
 ## Features
 
-### Current (Phase 1 - OAuth Complete)
+### Current (Phase 1 - Complete ✅)
 
 - ✅ **Spotify OAuth Flow** - Users can connect their Spotify accounts
 - ✅ **Secure Authentication** - CSRF-protected OAuth with state tokens
 - ✅ **Token Persistence** - Access and refresh tokens stored in PostgreSQL
+- ✅ **Token Refresh** - Automatic token renewal when expired
+- ✅ **Spotify API Integration** - Token validation and user profile retrieval
 - ✅ **Database Layer** - Repository pattern with compile-time checked queries (sqlx)
 - ✅ **Error Handling** - Typed error variants with proper HTTP status codes
 - ✅ **Structured Logging** - Comprehensive tracing throughout the application
 
 ### Upcoming
 
-- ⏳ **Token Refresh** - Automatic token renewal (Phase 1.6)
 - ⏳ **Slack Integration** - Handle `app_mention` events (Phase 2)
 - ⏳ **Link Parsing** - Extract Spotify URLs from messages (Phase 3)
 - ⏳ **Track Saving** - Save tracks to user's library (Phase 3)
@@ -134,6 +135,13 @@ GET /spotify/callback?code=<CODE>&state=<STATE>
 
 Handles Spotify OAuth callback, exchanges code for tokens, stores in database.
 
+#### 3. Verify Authentication
+```
+GET /spotify/verify?slack_workspace_id=<WORKSPACE_ID>&slack_user_id=<USER_ID>
+```
+
+Verifies authentication, refreshes token if needed, returns Spotify user profile.
+
 ## Development
 
 ### Run Tests
@@ -233,27 +241,28 @@ All changes go through Pull Requests:
 
 ## Current Status
 
-**Phase 1 Progress:** 5/8 sub-phases complete
+**Phase 1 Progress:** ✅ COMPLETE (8/8 sub-phases)
 
 - ✅ Phase 1.1: Database Setup
 - ✅ Phase 1.2: Repository Layer
 - ✅ Phase 1.3: OAuth Infrastructure
 - ✅ Phase 1.4: Spotify Connect Endpoint
 - ✅ Phase 1.5: Spotify Callback Endpoint
-- ⏳ Phase 1.6: Token Refresh Helper
+- ✅ Phase 1.6: Token Refresh Helper
 - ✅ Phase 1.7: Application State Setup
-- ⏳ Phase 1.8: Testing & Verification
+- ✅ Phase 1.8: Testing & Verification
 
 **What works now:**
 - Users can complete OAuth flow to connect Spotify
 - Tokens are stored securely in PostgreSQL
+- Automatic token refresh when expired
+- Token validation via Spotify API
 - CSRF protection via state tokens
 - Comprehensive error handling and logging
 
 **Next steps:**
-- Implement token refresh logic
-- End-to-end testing
-- Slack integration
+- Phase 2: Slack Integration
+- Phase 3: Spotify link parsing and track saving
 
 ## License
 

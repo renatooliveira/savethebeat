@@ -17,11 +17,11 @@ Slack ↔ Spotify integration bot that allows users to save Spotify tracks to th
 - Structured logging with tracing
 - Rust edition 2024
 
-### Phase 1: Persistence + Spotify Auth 🚧 IN PROGRESS
+### Phase 1: Persistence + Spotify Auth ✅ COMPLETE
 
 **Goal:** Connect Slack user to Spotify; tokens stored + refresh works
 
-**Status:** Phases 1.1-1.5, 1.7 Complete ✅ | Phase 1.6, 1.8 Pending
+**Status:** All phases complete ✅
 
 #### Phase 1.1: Database Setup ✅
 - [x] Add sqlx, uuid, chrono dependencies
@@ -82,10 +82,12 @@ Slack ↔ Spotify integration bot that allows users to save Spotify tracks to th
 
 **PR:** #6 - Phase 1.5: Spotify Callback Endpoint
 
-#### Phase 1.6: Token Refresh Helper ⏳ PENDING
-- [ ] Create `src/spotify/client.rs` with:
-  - [ ] `refresh_access_token()` - refresh expired tokens
-  - [ ] `ensure_valid_token()` - get valid token (refresh if needed)
+#### Phase 1.6: Token Refresh Helper ✅
+- [x] Create `src/spotify/client.rs` with:
+  - [x] `refresh_access_token()` - refresh expired tokens
+  - [x] `ensure_valid_token()` - get valid token (refresh if needed)
+
+**PR:** #10 - Phase 1.6: Token Refresh Helper
 
 #### Phase 1.7: Application State Setup ✅
 - [x] Update `src/lib.rs` with SpotifyState
@@ -95,17 +97,20 @@ Slack ↔ Spotify integration bot that allows users to save Spotify tracks to th
 
 **Completed in:** PRs #5 and #6
 
-#### Phase 1.8: Testing & Verification ⏳ PENDING
-- [ ] Complete OAuth flow end-to-end
-- [ ] Verify token refresh works
-- [ ] Test Spotify API calls with tokens
-- [ ] All CI checks pass
+#### Phase 1.8: Testing & Verification ✅
+- [x] Add `/spotify/verify` endpoint for end-to-end testing
+- [x] Create `SpotifyUser` struct for API responses
+- [x] Implement `get_current_user()` to call Spotify API
+- [x] Verify token refresh works automatically
+- [x] All CI checks pass
+
+**PR:** #11 - Phase 1.8: Testing & Verification
 
 **Definition of Done:**
 - ✅ User can complete Spotify OAuth flow (/connect → Spotify → /callback)
 - ✅ Tokens persist in database across restarts (user_auth table)
-- ⏳ Expired tokens automatically refresh (Phase 1.6 pending)
-- ⏳ Spotify API call succeeds with refreshed token (Phase 1.8 pending)
+- ✅ Expired tokens automatically refresh
+- ✅ Spotify API call succeeds with refreshed token
 
 **Completed:**
 - OAuth flow fully functional (connect + callback)
@@ -113,10 +118,9 @@ Slack ↔ Spotify integration bot that allows users to save Spotify tracks to th
 - Database persistence with upsert logic
 - Token expiry tracking with 5-minute buffer
 - Styled HTML success page
-
-**Remaining:**
-- Token refresh functionality
-- End-to-end testing with real Spotify API
+- Token refresh with automatic refresh on expiry
+- Verification endpoint for end-to-end testing
+- Spotify API integration with `/v1/me` endpoint
 
 ---
 
