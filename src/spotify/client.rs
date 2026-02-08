@@ -3,6 +3,7 @@ use crate::db::repository::{get_user_auth, update_tokens};
 use crate::error::AppError;
 use chrono::{Duration, Utc};
 use oauth2::{RefreshToken, TokenResponse, basic::BasicClient, reqwest::async_http_client};
+use serde::Deserialize;
 use sqlx::PgPool;
 
 /// Refresh an expired Spotify access token
@@ -167,6 +168,63 @@ pub async fn ensure_valid_token(
 
         Ok(user_auth.access_token)
     }
+}
+
+/// Spotify user profile information
+#[derive(Debug, Deserialize)]
+pub struct SpotifyUser {
+    pub id: String,
+    pub display_name: Option<String>,
+    pub email: Option<String>,
+}
+
+/// Get current user's Spotify profile
+///
+/// Makes a call to Spotify's /v1/me endpoint to verify token works
+/// and retrieve user information.
+///
+/// # Arguments
+/// * `access_token` - Valid Spotify access token
+///
+/// # Returns
+/// SpotifyUser with profile information
+///
+/// # Errors
+/// Returns error if:
+/// - HTTP request fails
+/// - Token is invalid
+/// - Response parsing fails
+pub async fn get_current_user(access_token: &str) -> Result<SpotifyUser, AppError> {
+    let client = reqwest::Client::new();
+
+    let response = client
+        .get("https://api.spotify.com/v1/me")
+        .bearer_auth(access_token)
+        .send()
+        .await
+        .map_err(|e| {
+            tracing::error!("Spotify API request failed: {:?}", e);
+            AppError::SpotifyApi(format!("Failed to call Spotify API: {}", e))
+        })?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        tracing::error!(
+            status = %status,
+            body = %body,
+            "Spotify API returned error"
+        );
+        return Err(AppError::SpotifyApi(format!(
+            "Spotify API error: {} - {}",
+            status, body
+        )));
+    }
+
+    response.json::<SpotifyUser>().await.map_err(|e| {
+        tracing::error!("Failed to parse Spotify API response: {:?}", e);
+        AppError::SpotifyApi(format!("Failed to parse response: {}", e))
+    })
 }
 
 #[cfg(test)]

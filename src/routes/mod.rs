@@ -12,12 +12,14 @@ pub fn routes() -> Router {
 /// # Routes
 /// - GET /spotify/connect - Initiate OAuth flow
 /// - GET /spotify/callback - Handle OAuth callback
+/// - GET /spotify/verify - Verify authentication and test token refresh
 pub fn spotify_routes() -> Router<crate::spotify::routes::SpotifyState> {
-    use crate::spotify::routes::{callback, connect};
+    use crate::spotify::routes::{callback, connect, verify};
 
     Router::new()
         .route("/spotify/connect", get(connect))
         .route("/spotify/callback", get(callback))
+        .route("/spotify/verify", get(verify))
 }
 
 async fn health() -> Json<serde_json::Value> {

@@ -1,9 +1,11 @@
 use crate::db::repository::upsert_user_auth;
 use crate::error::AppError;
+use crate::spotify::client::{ensure_valid_token, get_current_user};
 use crate::spotify::oauth::{
     StateStore, generate_state_token, store_state, validate_and_consume_state,
 };
 use axum::{
+    Json,
     extract::{Query, State},
     response::{Html, Redirect},
 };
@@ -12,7 +14,7 @@ use oauth2::{
     AuthorizationCode, CsrfToken, Scope, TokenResponse, basic::BasicClient,
     reqwest::async_http_client,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
 /// Query parameters for /spotify/connect endpoint
@@ -217,6 +219,83 @@ pub async fn callback(
     let html = render_success_page(&workspace_id, &user_id);
 
     Ok(Html(html))
+}
+
+/// Query parameters for /spotify/verify endpoint
+#[derive(Debug, Deserialize)]
+pub struct VerifyQuery {
+    pub slack_workspace_id: String,
+    pub slack_user_id: String,
+}
+
+/// Response for /spotify/verify endpoint
+#[derive(Debug, Serialize)]
+pub struct VerifyResponse {
+    pub success: bool,
+    pub spotify_user_id: String,
+    pub display_name: Option<String>,
+    pub email: Option<String>,
+    pub token_refreshed: bool,
+}
+
+/// Verify Spotify authentication and test token refresh
+///
+/// # Endpoint
+/// GET /spotify/verify?slack_workspace_id=<WORKSPACE>&slack_user_id=<USER>
+///
+/// # Flow
+/// 1. Fetch user authentication from database
+/// 2. Ensure token is valid (refresh if expired)
+/// 3. Call Spotify API to verify token works
+/// 4. Return user profile information
+///
+/// # Query Parameters
+/// - `slack_workspace_id`: Slack workspace ID (e.g., "T123ABC")
+/// - `slack_user_id`: Slack user ID (e.g., "U456DEF")
+///
+/// # Returns
+/// JSON with Spotify user profile and refresh status
+///
+/// # Errors
+/// - 400 Bad Request if user not authenticated
+/// - 500 Internal Server Error if token refresh or API call fails
+pub async fn verify(
+    State(state): State<SpotifyState>,
+    Query(params): Query<VerifyQuery>,
+) -> Result<Json<VerifyResponse>, AppError> {
+    tracing::info!(
+        slack_workspace_id = %params.slack_workspace_id,
+        slack_user_id = %params.slack_user_id,
+        "Verifying Spotify authentication"
+    );
+
+    // Ensure we have a valid access token (will refresh if needed)
+    let access_token = ensure_valid_token(
+        &state.db,
+        &state.oauth_client,
+        &params.slack_workspace_id,
+        &params.slack_user_id,
+    )
+    .await?;
+
+    tracing::debug!("Obtained valid access token");
+
+    // Call Spotify API to verify token works
+    let spotify_user = get_current_user(&access_token).await?;
+
+    tracing::info!(
+        spotify_user_id = %spotify_user.id,
+        display_name = ?spotify_user.display_name,
+        "Successfully verified Spotify authentication"
+    );
+
+    Ok(Json(VerifyResponse {
+        success: true,
+        spotify_user_id: spotify_user.id,
+        display_name: spotify_user.display_name,
+        email: spotify_user.email,
+        token_refreshed: false, // TODO: Track if refresh occurred
+    }))
 }
 
 #[cfg(test)]
