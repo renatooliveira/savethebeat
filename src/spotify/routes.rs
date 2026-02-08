@@ -234,7 +234,6 @@ pub struct VerifyResponse {
     pub success: bool,
     pub spotify_user_id: String,
     pub display_name: Option<String>,
-    pub email: Option<String>,
     pub token_refreshed: bool,
 }
 
@@ -293,7 +292,6 @@ pub async fn verify(
         success: true,
         spotify_user_id: spotify_user.id,
         display_name: spotify_user.display_name,
-        email: spotify_user.email,
         token_refreshed: false, // TODO: Track if refresh occurred
     }))
 }

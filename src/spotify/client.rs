@@ -175,7 +175,6 @@ pub async fn ensure_valid_token(
 pub struct SpotifyUser {
     pub id: String,
     pub display_name: Option<String>,
-    pub email: Option<String>,
 }
 
 /// Get current user's Spotify profile
