@@ -43,7 +43,7 @@ When users share Spotify links in Slack conversations, they can mention `@saveth
 
 ### 1. Install Dependencies
 
-\`\`\`bash
+```bash
 # Install Rust (if not already installed)
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
@@ -53,7 +53,7 @@ cargo install sqlx-cli --no-default-features --features postgres
 # Install PostgreSQL (macOS)
 brew install postgresql@14
 brew services start postgresql@14
-\`\`\`
+```
 
 ### 2. Create Spotify App
 
@@ -64,19 +64,19 @@ brew services start postgresql@14
 
 ### 3. Database Setup
 
-\`\`\`bash
+```bash
 # Create database
 createdb savethebeat
 
 # Run migrations
 sqlx migrate run
-\`\`\`
+```
 
 ### 4. Environment Configuration
 
 Create a \`.env\` file in the project root:
 
-\`\`\`bash
+```bash
 # Server
 PORT=3000
 HOST=0.0.0.0
@@ -95,42 +95,42 @@ BASE_URL=http://127.0.0.1:3000
 # Slack (Phase 2+)
 # SLACK_SIGNING_SECRET=
 # SLACK_BOT_TOKEN=
-\`\`\`
+```
 
 ### 5. Run the Application
 
-\`\`\`bash
+```bash
 # Development mode
 cargo run
 
 # Release mode
 cargo run --release
-\`\`\`
+```
 
 The server will start on \`http://127.0.0.1:3000\`
 
 ## API Endpoints
 
 ### Health Check
-\`\`\`
+```
 GET /health
-\`\`\`
+```
 
 Returns server status and version.
 
 ### Spotify OAuth Flow
 
 #### 1. Initiate Connection
-\`\`\`
+```
 GET /spotify/connect?slack_workspace_id=<WORKSPACE_ID>&slack_user_id=<USER_ID>
-\`\`\`
+```
 
 Redirects to Spotify for authorization.
 
 #### 2. OAuth Callback
-\`\`\`
+```
 GET /spotify/callback?code=<CODE>&state=<STATE>
-\`\`\`
+```
 
 Handles Spotify OAuth callback, exchanges code for tokens, stores in database.
 
@@ -138,7 +138,7 @@ Handles Spotify OAuth callback, exchanges code for tokens, stores in database.
 
 ### Run Tests
 
-\`\`\`bash
+```bash
 # All tests
 cargo test
 
@@ -147,11 +147,11 @@ cargo test -- --nocapture
 
 # Specific test
 cargo test test_name
-\`\`\`
+```
 
 ### Code Quality
 
-\`\`\`bash
+```bash
 # Format code
 cargo fmt
 
@@ -160,11 +160,11 @@ cargo clippy --all-targets --all-features -- -D warnings
 
 # Check without building
 cargo check
-\`\`\`
+```
 
 ### Database Migrations
 
-\`\`\`bash
+```bash
 # Create new migration
 sqlx migrate add migration_name
 
@@ -176,11 +176,11 @@ sqlx migrate revert
 
 # Generate sqlx offline cache (for CI)
 DATABASE_URL=postgresql://localhost/savethebeat cargo sqlx prepare
-\`\`\`
+```
 
 ## Project Structure
 
-\`\`\`
+```
 savethebeat/
 ├── src/
 │   ├── main.rs              # Entry point
@@ -203,7 +203,7 @@ savethebeat/
 ├── .sqlx/                # sqlx offline query cache
 ├── Cargo.toml            # Dependencies
 └── .env                  # Environment variables (not in git)
-\`\`\`
+```
 
 ## CI/CD
 
