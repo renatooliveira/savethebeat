@@ -59,7 +59,7 @@ brew services start postgresql@14
 
 1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
 2. Create a new app
-3. Add redirect URI: \`http://127.0.0.1:3000/spotify/callback\`
+3. Add redirect URI: `http://127.0.0.1:3000/spotify/callback`
 4. Note your Client ID and Client Secret
 
 ### 3. Database Setup
@@ -74,7 +74,7 @@ sqlx migrate run
 
 ### 4. Environment Configuration
 
-Create a \`.env\` file in the project root:
+Create a `.env` file in the project root:
 
 ```bash
 # Server
@@ -107,7 +107,7 @@ cargo run
 cargo run --release
 ```
 
-The server will start on \`http://127.0.0.1:3000\`
+The server will start on `http://127.0.0.1:3000`
 
 ## API Endpoints
 
@@ -207,11 +207,11 @@ savethebeat/
 
 ## CI/CD
 
-GitHub Actions workflow (\`.github/workflows/ci.yml\`):
-- ✅ Format check (\`cargo fmt\`)
-- ✅ Clippy lints (\`cargo clippy\`)
-- ✅ Tests with PostgreSQL (\`cargo test\`)
-- ✅ Release build (\`cargo build --release\`)
+GitHub Actions workflow (`.github/workflows/ci.yml`):
+- ✅ Format check (`cargo fmt`)
+- ✅ Clippy lints (`cargo clippy`)
+- ✅ Tests with PostgreSQL (`cargo test`)
+- ✅ Release build (`cargo build --release`)
 
 ## Documentation
 
@@ -225,9 +225,9 @@ This is a personal project, but issues and suggestions are welcome!
 ### Workflow
 
 All changes go through Pull Requests:
-1. Create feature branch: \`git checkout -b feature/your-feature\`
+1. Create feature branch: `git checkout -b feature/your-feature`
 2. Make changes and commit
-3. Push branch: \`git push -u origin feature/your-feature\`
+3. Push branch: `git push -u origin feature/your-feature`
 4. Create PR via GitHub CLI or web interface
 5. Wait for review and CI checks
 
