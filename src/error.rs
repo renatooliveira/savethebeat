@@ -24,6 +24,18 @@ pub enum AppError {
     #[error("Invalid request: {0}")]
     BadRequest(String),
 
+    #[error("Slack signature invalid: {0}")]
+    SignatureInvalid(String),
+
+    #[error("Slack signature missing")]
+    SignatureMissing,
+
+    #[error("Slack signature expired: {0}")]
+    SignatureExpired(String),
+
+    #[error("Slack API error: {0}")]
+    SlackApi(String),
+
     #[error("Internal server error: {0}")]
     Internal(#[from] anyhow::Error),
 }
@@ -53,6 +65,22 @@ impl IntoResponse for AppError {
             AppError::BadRequest(msg) => {
                 tracing::warn!("Bad request: {}", msg);
                 (StatusCode::BAD_REQUEST, msg.as_str())
+            }
+            AppError::SignatureInvalid(msg) => {
+                tracing::warn!("Invalid Slack signature: {}", msg);
+                (StatusCode::UNAUTHORIZED, "Invalid signature")
+            }
+            AppError::SignatureMissing => {
+                tracing::warn!("Slack signature headers missing");
+                (StatusCode::UNAUTHORIZED, "Missing signature headers")
+            }
+            AppError::SignatureExpired(msg) => {
+                tracing::warn!("Slack signature expired: {}", msg);
+                (StatusCode::UNAUTHORIZED, "Signature expired")
+            }
+            AppError::SlackApi(msg) => {
+                tracing::error!("Slack API error: {}", msg);
+                (StatusCode::BAD_GATEWAY, "Slack API error")
             }
             AppError::Internal(err) => {
                 tracing::error!("Internal error: {:?}", err);

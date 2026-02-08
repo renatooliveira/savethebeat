@@ -1,4 +1,7 @@
-use axum::{Json, Router, routing::get};
+use axum::{
+    Json, Router,
+    routing::{get, post},
+};
 use serde_json::json;
 
 pub fn routes() -> Router {
@@ -20,6 +23,18 @@ pub fn spotify_routes() -> Router<crate::spotify::routes::SpotifyState> {
         .route("/spotify/connect", get(connect))
         .route("/spotify/callback", get(callback))
         .route("/spotify/verify", get(verify))
+}
+
+/// Build Slack event routes
+///
+/// Requires SlackState to be provided via with_state
+///
+/// # Routes
+/// - POST /slack/events - Handle Slack event webhooks
+pub fn slack_routes() -> Router<crate::slack::routes::SlackState> {
+    use crate::slack::routes::handle_slack_events;
+
+    Router::new().route("/slack/events", post(handle_slack_events))
 }
 
 async fn health() -> Json<serde_json::Value> {

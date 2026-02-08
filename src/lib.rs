@@ -2,6 +2,7 @@ pub mod config;
 pub mod db;
 pub mod error;
 pub mod routes;
+pub mod slack;
 pub mod spotify;
 pub mod telemetry;
 
@@ -30,10 +31,25 @@ pub async fn run(config: config::Config) -> anyhow::Result<()> {
     // Build application router
     let spotify_router = routes::spotify_routes().with_state(spotify_state);
 
-    let app = Router::new()
-        .merge(routes::routes())
-        .merge(spotify_router)
-        .layer(TraceLayer::new_for_http());
+    let mut app = Router::new().merge(routes::routes()).merge(spotify_router);
+
+    // Add Slack routes if configured
+    if let (Some(signing_secret), Some(bot_token)) =
+        (&config.slack_signing_secret, &config.slack_bot_token)
+    {
+        let slack_state = slack::routes::SlackState {
+            signing_secret: signing_secret.clone(),
+            bot_token: bot_token.clone(),
+        };
+
+        let slack_router = routes::slack_routes().with_state(slack_state);
+        app = app.merge(slack_router);
+        tracing::info!("Initialized Slack event handler");
+    } else {
+        tracing::warn!("Slack credentials not configured, skipping Slack integration");
+    }
+
+    let app = app.layer(TraceLayer::new_for_http());
 
     let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
     tracing::info!("Starting server on {}", addr);
