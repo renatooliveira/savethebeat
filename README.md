@@ -8,22 +8,31 @@ When users share Spotify links in Slack conversations, they can mention `@saveth
 
 ## Features
 
-### Current (Phase 1 - Complete ✅)
+### Current (Phase 1-2 - Complete ✅)
 
-- ✅ **Spotify OAuth Flow** - Users can connect their Spotify accounts
+**Spotify OAuth (Phase 1):**
+- ✅ **OAuth Flow** - Users can connect their Spotify accounts
 - ✅ **Secure Authentication** - CSRF-protected OAuth with state tokens
 - ✅ **Token Persistence** - Access and refresh tokens stored in PostgreSQL
 - ✅ **Token Refresh** - Automatic token renewal when expired
 - ✅ **Spotify API Integration** - Token validation and user profile retrieval
+
+**Slack Integration (Phase 2):**
+- ✅ **Event Webhook** - Receive and process Slack app_mention events
+- ✅ **Signature Verification** - HMAC-SHA256 signature verification with replay protection
+- ✅ **Thread Resolution** - Fetch all messages in a thread via Slack API
+- ✅ **Optional Configuration** - Slack integration enabled only when credentials are configured
+
+**Infrastructure:**
 - ✅ **Database Layer** - Repository pattern with compile-time checked queries (sqlx)
 - ✅ **Error Handling** - Typed error variants with proper HTTP status codes
 - ✅ **Structured Logging** - Comprehensive tracing throughout the application
 
 ### Upcoming
 
-- ⏳ **Slack Integration** - Handle `app_mention` events (Phase 2)
 - ⏳ **Link Parsing** - Extract Spotify URLs from messages (Phase 3)
 - ⏳ **Track Saving** - Save tracks to user's library (Phase 3)
+- ⏳ **Slack Reactions** - Feedback with ✅/♻️/❌ reactions (Phase 3)
 
 ## Tech Stack
 
@@ -39,6 +48,7 @@ When users share Spotify links in Slack conversations, they can mention `@saveth
 - Rust 1.93 or later
 - PostgreSQL 14+
 - Spotify Developer Account (for OAuth credentials)
+- Slack App (optional, for event integration)
 
 ## Setup
 
@@ -63,7 +73,21 @@ brew services start postgresql@14
 3. Add redirect URI: `http://127.0.0.1:3000/spotify/callback`
 4. Note your Client ID and Client Secret
 
-### 3. Database Setup
+### 3. Create Slack App (Optional)
+
+1. Go to [Slack API Apps](https://api.slack.com/apps)
+2. Create a new app (from scratch)
+3. Configure OAuth & Permissions:
+   - Add Bot Token Scopes: `app_mentions:read`, `channels:history`, `groups:history`, `im:history`, `mpim:history`
+   - Install app to workspace
+   - Copy Bot User OAuth Token (starts with `xoxb-`)
+4. Configure Event Subscriptions:
+   - Enable Events
+   - Request URL: `https://your-domain.com/slack/events`
+   - Subscribe to bot events: `app_mention`
+5. Note your Signing Secret from Basic Information
+
+### 4. Database Setup
 
 ```bash
 # Create database
@@ -73,7 +97,7 @@ createdb savethebeat
 sqlx migrate run
 ```
 
-### 4. Environment Configuration
+### 5. Environment Configuration
 
 Create a `.env` file in the project root:
 
@@ -87,18 +111,20 @@ RUST_LOG_FORMAT=pretty
 # Database
 DATABASE_URL=postgresql://localhost/savethebeat
 
-# Spotify OAuth
+# Spotify OAuth (Required)
 SPOTIFY_CLIENT_ID=your_spotify_client_id
 SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
 SPOTIFY_REDIRECT_URI=http://127.0.0.1:3000/spotify/callback
 BASE_URL=http://127.0.0.1:3000
 
-# Slack (Phase 2+)
-# SLACK_SIGNING_SECRET=
-# SLACK_BOT_TOKEN=
+# Slack Integration (Optional - Phase 2+)
+SLACK_SIGNING_SECRET=your_signing_secret
+SLACK_BOT_TOKEN=xoxb-your-bot-token
 ```
 
-### 5. Run the Application
+**Note:** Slack credentials are optional. If not provided, the server runs without Slack integration (Spotify OAuth still works).
+
+### 6. Run the Application
 
 ```bash
 # Development mode
@@ -141,6 +167,28 @@ GET /spotify/verify?slack_workspace_id=<WORKSPACE_ID>&slack_user_id=<USER_ID>
 ```
 
 Verifies authentication, refreshes token if needed, returns Spotify user profile.
+
+### Slack Events (Phase 2)
+
+#### Webhook Endpoint
+```
+POST /slack/events
+```
+
+Receives Slack event webhooks with signature verification.
+
+**Headers:**
+- `X-Slack-Request-Timestamp` - Request timestamp
+- `X-Slack-Signature` - HMAC-SHA256 signature
+
+**Event Types:**
+- `url_verification` - Initial challenge for endpoint setup
+- `event_callback` - Actual events (e.g., app_mention)
+
+**Security:**
+- HMAC-SHA256 signature verification
+- 5-minute timestamp window (replay protection)
+- Constant-time comparison (timing attack protection)
 
 ## Development
 
@@ -203,6 +251,13 @@ savethebeat/
 │   ├── spotify/
 │   │   ├── mod.rs          # Module exports
 │   │   ├── oauth.rs        # OAuth client and state management
+│   │   ├── client.rs       # Spotify API client
+│   │   └── routes.rs       # HTTP handlers
+│   ├── slack/
+│   │   ├── mod.rs          # Module exports
+│   │   ├── verification.rs # Signature verification
+│   │   ├── events.rs       # Event types and structures
+│   │   ├── client.rs       # Slack API client
 │   │   └── routes.rs       # HTTP handlers
 │   └── routes/
 │       └── mod.rs          # Route aggregation
@@ -241,28 +296,39 @@ All changes go through Pull Requests:
 
 ## Current Status
 
-**Phase 1 Progress:** ✅ COMPLETE (8/8 sub-phases)
+**Phase 1:** ✅ COMPLETE (8/8 sub-phases)
+**Phase 2:** ✅ COMPLETE
 
-- ✅ Phase 1.1: Database Setup
-- ✅ Phase 1.2: Repository Layer
-- ✅ Phase 1.3: OAuth Infrastructure
-- ✅ Phase 1.4: Spotify Connect Endpoint
-- ✅ Phase 1.5: Spotify Callback Endpoint
-- ✅ Phase 1.6: Token Refresh Helper
-- ✅ Phase 1.7: Application State Setup
-- ✅ Phase 1.8: Testing & Verification
+### Completed Phases
+
+**Phase 1: Spotify OAuth & Token Management**
+- ✅ Database Setup
+- ✅ Repository Layer
+- ✅ OAuth Infrastructure
+- ✅ Spotify Connect Endpoint
+- ✅ Spotify Callback Endpoint
+- ✅ Token Refresh Helper
+- ✅ Application State Setup
+- ✅ Testing & Verification
+
+**Phase 2: Slack Integration**
+- ✅ Slack event webhook endpoint
+- ✅ Signature verification (HMAC-SHA256)
+- ✅ url_verification handling
+- ✅ app_mention event processing
+- ✅ Thread message fetching
 
 **What works now:**
-- Users can complete OAuth flow to connect Spotify
-- Tokens are stored securely in PostgreSQL
-- Automatic token refresh when expired
-- Token validation via Spotify API
-- CSRF protection via state tokens
-- Comprehensive error handling and logging
+- Users can complete OAuth flow to connect Spotify accounts
+- Tokens stored securely in PostgreSQL with automatic refresh
+- Bot receives app_mention events from Slack
+- Thread messages fetched via Slack API
+- HMAC-SHA256 signature verification with replay protection
+- Comprehensive error handling and structured logging
 
 **Next steps:**
-- Phase 2: Slack Integration
 - Phase 3: Spotify link parsing and track saving
+- Phase 4: Retries, rate limiting, and observability
 
 ## License
 
