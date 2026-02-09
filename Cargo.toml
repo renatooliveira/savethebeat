@@ -35,8 +35,11 @@ chrono = { version = "0.4", features = ["serde"] }
 oauth2 = "4.4"
 reqwest = { version = "0.12", features = ["json"] }
 
-# Crypto for state tokens
+# Crypto for state tokens and Slack signatures
 rand = "0.8"
 base64 = "0.22"
+hmac = "0.12"
+sha2 = "0.10"
+hex = "0.4"
 
 [dev-dependencies]
