@@ -124,21 +124,34 @@ Slack ↔ Spotify integration bot that allows users to save Spotify tracks to th
 
 ---
 
-### Phase 2: Slack Events + Thread Resolution
+### Phase 2: Slack Events + Thread Resolution ✅ COMPLETE
 
 **Goal:** Receive `app_mention` and fetch thread messages
 
+**Status:** Complete
+
 **Tasks:**
-1. Implement `POST /slack/events` with signature verification
-2. Handle Slack `url_verification`
-3. Handle `event_callback` for `app_mention`
-4. Extract event metadata
-5. Implement Slack client for `conversations.replies`
+1. [x] Implement `POST /slack/events` with signature verification
+2. [x] Handle Slack `url_verification`
+3. [x] Handle `event_callback` for `app_mention`
+4. [x] Extract event metadata
+5. [x] Implement Slack client for `conversations.replies`
+
+**Implemented:**
+- HMAC-SHA256 signature verification with 5-minute timestamp window
+- url_verification challenge response for endpoint setup
+- app_mention event parsing and metadata extraction
+- Slack API client for fetching thread messages
+- Optional Slack integration (enabled via environment variables)
+- Comprehensive error handling (SignatureInvalid, SignatureExpired, SlackApi)
+- 9 new tests for signature verification and event parsing
 
 **DoD:**
-- Slack endpoint passes verification
-- Bot receives mention events
-- Thread messages can be fetched
+- ✅ Slack endpoint passes verification
+- ✅ Bot receives mention events
+- ✅ Thread messages can be fetched
+
+**PR:** #12 - Phase 2: Slack Events + Thread Resolution
 
 ---
 
