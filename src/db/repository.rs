@@ -1,4 +1,4 @@
-use crate::db::models::UserAuth;
+use crate::db::models::{SaveActionLog, UserAuth};
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -133,6 +133,127 @@ pub async fn update_tokens(
     .await?;
 
     Ok(())
+}
+
+/// Check if a save action already exists for a given track in a thread
+///
+/// Used for idempotency - prevents saving the same track multiple times.
+///
+/// # Arguments
+/// * `pool` - Database connection pool
+/// * `workspace_id` - Slack workspace ID
+/// * `user_id` - Slack user ID
+/// * `thread_ts` - Thread timestamp
+/// * `track_id` - Spotify track ID
+///
+/// # Returns
+/// Some(SaveActionLog) if a save action exists, None otherwise
+pub async fn get_save_action(
+    pool: &PgPool,
+    workspace_id: &str,
+    user_id: &str,
+    thread_ts: &str,
+    track_id: &str,
+) -> Result<Option<SaveActionLog>, sqlx::Error> {
+    sqlx::query_as!(
+        SaveActionLog,
+        r#"
+        SELECT
+            id,
+            slack_workspace_id,
+            slack_user_id,
+            channel_id,
+            thread_ts,
+            mention_ts,
+            spotify_track_id,
+            status,
+            error_code,
+            error_message,
+            created_at
+        FROM save_action_log
+        WHERE slack_workspace_id = $1
+            AND slack_user_id = $2
+            AND thread_ts = $3
+            AND spotify_track_id = $4
+        ORDER BY created_at DESC
+        LIMIT 1
+        "#,
+        workspace_id,
+        user_id,
+        thread_ts,
+        track_id
+    )
+    .fetch_optional(pool)
+    .await
+}
+
+/// Parameters for creating a save action log
+pub struct SaveActionParams<'a> {
+    pub workspace_id: &'a str,
+    pub user_id: &'a str,
+    pub channel_id: &'a str,
+    pub thread_ts: &'a str,
+    pub mention_ts: &'a str,
+    pub track_id: &'a str,
+    pub status: &'a str,
+    pub error_code: Option<&'a str>,
+    pub error_message: Option<&'a str>,
+}
+
+/// Create a save action log entry
+///
+/// Records an attempt to save a track, whether successful or failed.
+///
+/// # Arguments
+/// * `pool` - Database connection pool
+/// * `params` - Save action parameters
+///
+/// # Errors
+/// Returns error if database insert fails
+pub async fn create_save_action(
+    pool: &PgPool,
+    params: SaveActionParams<'_>,
+) -> Result<SaveActionLog, sqlx::Error> {
+    sqlx::query_as!(
+        SaveActionLog,
+        r#"
+        INSERT INTO save_action_log (
+            slack_workspace_id,
+            slack_user_id,
+            channel_id,
+            thread_ts,
+            mention_ts,
+            spotify_track_id,
+            status,
+            error_code,
+            error_message
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING
+            id,
+            slack_workspace_id,
+            slack_user_id,
+            channel_id,
+            thread_ts,
+            mention_ts,
+            spotify_track_id,
+            status,
+            error_code,
+            error_message,
+            created_at
+        "#,
+        params.workspace_id,
+        params.user_id,
+        params.channel_id,
+        params.thread_ts,
+        params.mention_ts,
+        params.track_id,
+        params.status,
+        params.error_code,
+        params.error_message
+    )
+    .fetch_one(pool)
+    .await
 }
 
 #[cfg(test)]

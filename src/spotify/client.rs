@@ -226,6 +226,59 @@ pub async fn get_current_user(access_token: &str) -> Result<SpotifyUser, AppErro
     })
 }
 
+/// Save a track to user's Spotify library
+///
+/// Adds a track to the user's "Liked Songs" (saved tracks).
+///
+/// # Arguments
+/// * `access_token` - Valid Spotify access token
+/// * `track_id` - Spotify track ID to save
+///
+/// # Returns
+/// Ok(()) if track was saved successfully
+///
+/// # Errors
+/// Returns error if:
+/// - HTTP request fails
+/// - Token is invalid
+/// - Track ID is invalid
+/// - User has reached library limit
+pub async fn save_track(access_token: &str, track_id: &str) -> Result<(), AppError> {
+    tracing::info!(track_id = track_id, "Saving track to Spotify library");
+
+    let client = reqwest::Client::new();
+    let url = "https://api.spotify.com/v1/me/tracks";
+
+    let response = client
+        .put(url)
+        .bearer_auth(access_token)
+        .query(&[("ids", track_id)])
+        .send()
+        .await
+        .map_err(|e| {
+            tracing::error!("Spotify API request failed: {:?}", e);
+            AppError::SpotifyApi(format!("Failed to save track: {}", e))
+        })?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        tracing::error!(
+            track_id = track_id,
+            status = %status,
+            body = %body,
+            "Spotify API returned error"
+        );
+        return Err(AppError::SpotifyApi(format!(
+            "Failed to save track: {} - {}",
+            status, body
+        )));
+    }
+
+    tracing::info!(track_id = track_id, "Successfully saved track");
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

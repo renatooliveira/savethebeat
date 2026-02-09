@@ -42,4 +42,7 @@ hmac = "0.12"
 sha2 = "0.10"
 hex = "0.4"
 
+# Regex for parsing Spotify links
+regex = "1.11"
+
 [dev-dependencies]
