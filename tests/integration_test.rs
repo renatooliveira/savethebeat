@@ -12,8 +12,8 @@ use sqlx::PgPool;
 ///
 /// This uses the DATABASE_URL from the environment
 async fn setup_test_db() -> PgPool {
-    let database_url = std::env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set for integration tests");
+    let database_url =
+        std::env::var("DATABASE_URL").expect("DATABASE_URL must be set for integration tests");
 
     PgPool::connect(&database_url)
         .await
@@ -22,23 +22,19 @@ async fn setup_test_db() -> PgPool {
 
 /// Test helper to clean up test data
 async fn cleanup_test_data(pool: &PgPool, workspace_id: &str, user_id: &str) {
-    sqlx::query!(
-        "DELETE FROM save_action_log WHERE slack_workspace_id = $1 AND slack_user_id = $2",
-        workspace_id,
-        user_id
-    )
-    .execute(pool)
-    .await
-    .ok();
+    sqlx::query("DELETE FROM save_action_log WHERE slack_workspace_id = $1 AND slack_user_id = $2")
+        .bind(workspace_id)
+        .bind(user_id)
+        .execute(pool)
+        .await
+        .ok();
 
-    sqlx::query!(
-        "DELETE FROM user_auth WHERE slack_workspace_id = $1 AND slack_user_id = $2",
-        workspace_id,
-        user_id
-    )
-    .execute(pool)
-    .await
-    .ok();
+    sqlx::query("DELETE FROM user_auth WHERE slack_workspace_id = $1 AND slack_user_id = $2")
+        .bind(workspace_id)
+        .bind(user_id)
+        .execute(pool)
+        .await
+        .ok();
 }
 
 #[tokio::test]
@@ -48,12 +44,12 @@ async fn test_database_connection() {
     let pool = setup_test_db().await;
 
     // Verify connection with a simple query
-    let result = sqlx::query!("SELECT 1 as value")
+    let result: (i32,) = sqlx::query_as("SELECT 1")
         .fetch_one(&pool)
         .await
         .expect("Failed to execute test query");
 
-    assert_eq!(result.value, Some(1));
+    assert_eq!(result.0, 1);
 }
 
 #[tokio::test]
@@ -157,9 +153,9 @@ async fn test_save_action_log_idempotency() {
         workspace_id,
         user_id,
         channel_id: "C_TEST",
-        thread_ts, // Same thread
+        thread_ts,                       // Same thread
         mention_ts: "1234567892.123456", // Different mention
-        track_id, // Same track - should violate unique constraint
+        track_id,                        // Same track - should violate unique constraint
         status: "saved",
         error_code: None,
         error_message: None,
@@ -243,12 +239,7 @@ fn test_spotify_parser_integration() {
 
     for (input, expected) in test_cases {
         let result = extract_track_id(input);
-        assert_eq!(
-            result.as_deref(),
-            expected,
-            "Failed for input: {}",
-            input
-        );
+        assert_eq!(result.as_deref(), expected, "Failed for input: {}", input);
     }
 
     // Test find_first_track with multiple messages
