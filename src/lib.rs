@@ -19,14 +19,16 @@ pub async fn run(config: config::Config) -> anyhow::Result<()> {
     let db = db::init_pool(&config.database_url).await?;
     tracing::info!("Database connection pool initialized");
 
+    // Initialize Spotify OAuth client
+    let oauth_client = spotify::oauth::build_oauth_client(&config);
+    tracing::info!("Initialized Spotify OAuth client");
+
     // Initialize Spotify OAuth state
     let spotify_state = spotify::routes::SpotifyState {
-        oauth_client: spotify::oauth::build_oauth_client(&config),
+        oauth_client: oauth_client.clone(),
         state_store: Arc::new(RwLock::new(HashMap::new())),
-        db,
+        db: db.clone(),
     };
-
-    tracing::info!("Initialized Spotify OAuth client");
 
     // Build application router
     let spotify_router = routes::spotify_routes().with_state(spotify_state);
@@ -40,6 +42,8 @@ pub async fn run(config: config::Config) -> anyhow::Result<()> {
         let slack_state = slack::routes::SlackState {
             signing_secret: signing_secret.clone(),
             bot_token: bot_token.clone(),
+            db: db.clone(),
+            oauth_client: oauth_client.clone(),
         };
 
         let slack_router = routes::slack_routes().with_state(slack_state);
