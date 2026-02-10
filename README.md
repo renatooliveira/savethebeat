@@ -6,9 +6,27 @@ A Slack ↔ Spotify integration bot that allows users to save Spotify tracks to 
 
 When users share Spotify links in Slack conversations, they can mention `@savethebeat` to automatically save those tracks to their Spotify library. The bot handles OAuth authentication, token management, and seamless integration between Slack and Spotify.
 
+## How It Works
+
+1. **Share a Spotify track** in a Slack thread
+2. **Mention the bot** with `@savethebeat`
+3. **Bot saves the track** to your Spotify Liked Songs
+4. **Get instant feedback** via emoji reaction:
+   - ✅ Track saved successfully
+   - ♻️ Track already saved (no duplicate)
+   - ❌ Error occurred (no link found, auth issue, etc.)
+
+**Example:**
+```
+[Slack Thread]
+Alice: Check out this song! https://open.spotify.com/track/3n3Ppam7vgaVa1iaRUc9Lp
+Bob: @savethebeat
+[Bot adds ✅ reaction]
+```
+
 ## Features
 
-### Current (Phase 1-2 - Complete ✅)
+### Current (Phase 1-3 - MVP Complete! ✅)
 
 **Spotify OAuth (Phase 1):**
 - ✅ **OAuth Flow** - Users can connect their Spotify accounts
@@ -23,6 +41,14 @@ When users share Spotify links in Slack conversations, they can mention `@saveth
 - ✅ **Thread Resolution** - Fetch all messages in a thread via Slack API
 - ✅ **Optional Configuration** - Slack integration enabled only when credentials are configured
 
+**Track Saving (Phase 3 - MVP Core):**
+- ✅ **Link Parsing** - Extract Spotify track IDs from URLs/URIs
+- ✅ **Track Saving** - Save tracks to user's Liked Songs library
+- ✅ **Slack Reactions** - Visual feedback (✅ saved, ♻️ already saved, ❌ error)
+- ✅ **Idempotency** - Prevent duplicate saves via database unique constraint
+- ✅ **Action Logging** - Track all save attempts with status and errors
+- ✅ **End-to-End Flow** - Complete workflow from mention to save
+
 **Infrastructure:**
 - ✅ **Database Layer** - Repository pattern with compile-time checked queries (sqlx)
 - ✅ **Error Handling** - Typed error variants with proper HTTP status codes
@@ -30,9 +56,9 @@ When users share Spotify links in Slack conversations, they can mention `@saveth
 
 ### Upcoming
 
-- ⏳ **Link Parsing** - Extract Spotify URLs from messages (Phase 3)
-- ⏳ **Track Saving** - Save tracks to user's library (Phase 3)
-- ⏳ **Slack Reactions** - Feedback with ✅/♻️/❌ reactions (Phase 3)
+- ⏳ **Retry Logic** - Handle transient API failures (Phase 4)
+- ⏳ **Rate Limiting** - Per-user rate limiting (Phase 4)
+- ⏳ **Observability** - Correlation IDs and metrics (Phase 4)
 
 ## Tech Stack
 
@@ -41,6 +67,8 @@ When users share Spotify links in Slack conversations, they can mention `@saveth
 - **Runtime:** Tokio (async)
 - **Database:** PostgreSQL with sqlx (compile-time checked queries)
 - **OAuth:** oauth2 crate
+- **Parsing:** regex crate for Spotify URL extraction
+- **Security:** HMAC-SHA256 for Slack signature verification
 - **Logging:** tracing + tracing-subscriber
 
 ## Prerequisites
@@ -298,6 +326,7 @@ All changes go through Pull Requests:
 
 **Phase 1:** ✅ COMPLETE (8/8 sub-phases)
 **Phase 2:** ✅ COMPLETE
+**Phase 3:** ✅ COMPLETE (MVP!)
 
 ### Completed Phases
 
@@ -318,17 +347,27 @@ All changes go through Pull Requests:
 - ✅ app_mention event processing
 - ✅ Thread message fetching
 
-**What works now:**
-- Users can complete OAuth flow to connect Spotify accounts
-- Tokens stored securely in PostgreSQL with automatic refresh
-- Bot receives app_mention events from Slack
-- Thread messages fetched via Slack API
-- HMAC-SHA256 signature verification with replay protection
-- Comprehensive error handling and structured logging
+**Phase 3: Parse + Save + Feedback (MVP Core)**
+- ✅ Spotify link parser (regex-based, supports multiple URL formats)
+- ✅ First link selection logic
+- ✅ Idempotency via database unique constraint
+- ✅ Spotify save to Liked Songs API
+- ✅ Slack reactions for feedback (✅/♻️/❌)
+- ✅ Save action logging
+
+**What works now (MVP Complete!):**
+- 🎵 Users can mention `@savethebeat` in threads to save Spotify tracks
+- 🔗 Bot automatically finds and parses Spotify links
+- 💾 Tracks saved to user's Liked Songs library
+- ✅ Instant visual feedback via Slack reactions
+- ♻️ Idempotency prevents duplicate saves
+- 🔐 Secure OAuth with automatic token refresh
+- 📊 All actions logged to database for tracking
+- 🛡️ HMAC-SHA256 signature verification with replay protection
 
 **Next steps:**
-- Phase 3: Spotify link parsing and track saving
 - Phase 4: Retries, rate limiting, and observability
+- Phase 5: Testing & rollout
 
 ## License
 
