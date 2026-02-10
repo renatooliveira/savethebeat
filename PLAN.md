@@ -155,22 +155,36 @@ Slack ↔ Spotify integration bot that allows users to save Spotify tracks to th
 
 ---
 
-### Phase 3: Parse + Save + Feedback (MVP Core)
+### Phase 3: Parse + Save + Feedback (MVP Core) ✅ COMPLETE
 
 **Goal:** Mention in thread saves first Spotify track and confirms
 
+**Status:** Complete
+
 **Tasks:**
-1. Implement Spotify link parser (unit tests)
-2. Implement "first link selection" logic
-3. Implement idempotency (unique constraint handling)
-4. Implement Spotify save to Liked Songs
-5. Implement Slack reactions (✅/♻️/❌)
-6. Implement ephemeral error messages
+1. [x] Implement Spotify link parser (unit tests)
+2. [x] Implement "first link selection" logic
+3. [x] Implement idempotency (unique constraint handling)
+4. [x] Implement Spotify save to Liked Songs
+5. [x] Implement Slack reactions (✅/♻️/❌)
+6. [x] Save action logging for idempotency and tracking
+
+**Implemented:**
+- Spotify link parser with regex (supports HTTP/HTTPS URLs and spotify: URIs)
+- First link selection from thread messages
+- Idempotency via `save_action_log` table with unique constraint
+- Spotify API integration to save tracks to Liked Songs
+- Slack reactions for visual feedback (✅ saved, ♻️ already saved, ❌ error)
+- Background task processing to avoid Slack timeout
+- Complete end-to-end flow: mention → parse → check → save → react → log
+- 11 new tests for parser (40 total tests)
 
 **DoD:**
-- Replying `@bot` in thread saves the track
-- Repeat mention yields ♻️ (no duplicate save)
-- Failures produce ❌ + actionable error message
+- ✅ Replying `@bot` in thread saves the track
+- ✅ Repeat mention yields ♻️ (no duplicate save)
+- ✅ Failures produce ❌ + actionable feedback
+
+**PR:** #14 - Phase 3: Parse + Save + Feedback (MVP Core)
 
 ---
 
