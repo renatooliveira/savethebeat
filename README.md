@@ -223,7 +223,7 @@ Receives Slack event webhooks with signature verification.
 ### Run Tests
 
 ```bash
-# All tests
+# All tests (unit + integration)
 cargo test
 
 # With output
@@ -231,7 +231,21 @@ cargo test -- --nocapture
 
 # Specific test
 cargo test test_name
+
+# Integration tests only
+cargo test --test integration_test
+
+# Run ignored tests (requires DATABASE_URL)
+cargo test -- --ignored
 ```
+
+**Test Coverage:** 40+ unit tests covering all critical paths
+
+See **[TESTING.md](./TESTING.md)** for:
+- Manual test checklist
+- Integration test examples
+- CI/CD testing strategy
+- Troubleshooting guide
 
 ### Code Quality
 
@@ -289,10 +303,13 @@ savethebeat/
 │   │   └── routes.rs       # HTTP handlers
 │   └── routes/
 │       └── mod.rs          # Route aggregation
+├── tests/                 # Integration tests
+│   └── integration_test.rs
 ├── migrations/             # SQL migration files
 ├── templates/             # HTML templates
 ├── .sqlx/                # sqlx offline query cache
 ├── Cargo.toml            # Dependencies
+├── TESTING.md            # Testing guide and checklists
 └── .env                  # Environment variables (not in git)
 ```
 
@@ -327,6 +344,7 @@ All changes go through Pull Requests:
 **Phase 1:** ✅ COMPLETE (8/8 sub-phases)
 **Phase 2:** ✅ COMPLETE
 **Phase 3:** ✅ COMPLETE (MVP!)
+**Phase 5:** ✅ COMPLETE (Testing & Documentation)
 
 ### Completed Phases
 
@@ -354,6 +372,13 @@ All changes go through Pull Requests:
 - ✅ Spotify save to Liked Songs API
 - ✅ Slack reactions for feedback (✅/♻️/❌)
 - ✅ Save action logging
+
+**Phase 5: Testing & Rollout**
+- ✅ Comprehensive TESTING.md with manual test checklists
+- ✅ Integration test examples (tests/integration_test.rs)
+- ✅ 40+ unit tests covering all critical paths
+- ✅ CI pipeline (format, clippy, tests, build)
+- ✅ Local development documentation complete
 
 **What works now (MVP Complete!):**
 - 🎵 Users can mention `@savethebeat` in threads to save Spotify tracks
