@@ -175,6 +175,13 @@ All PRs must pass CI checks before merging.
 
 **Prerequisites:** Complete TC-2.2 to have authenticated user
 
+#### TC-4.0: Connect Command (Alternative to Manual OAuth)
+- [ ] In Slack channel, type: `@savethebeat connect`
+- [ ] Verify bot replies with a message containing OAuth link
+- [ ] Verify link format: `https://your-domain.com/spotify/connect?slack_workspace_id=...&slack_user_id=...`
+- [ ] Click the link and complete OAuth flow
+- [ ] Verify authentication succeeds (same as TC-2.2)
+
 #### TC-4.1: Save Track - First Time
 - [ ] In Slack thread, post: `Check out this track! https://open.spotify.com/track/3n3Ppam7vgaVa1iaRUc9Lp`
 - [ ] Reply with: `@savethebeat`

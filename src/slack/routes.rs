@@ -1,6 +1,6 @@
 use crate::db::repository::{SaveActionParams, create_save_action, get_save_action};
 use crate::error::AppError;
-use crate::slack::client::{add_reaction, fetch_thread_messages};
+use crate::slack::client::{add_reaction, fetch_thread_messages, post_message};
 use crate::slack::events::{MentionEvent, SlackEventRequest};
 use crate::slack::verification::verify_slack_signature;
 use crate::spotify::client::{ensure_valid_token, save_track};
@@ -21,6 +21,7 @@ pub struct SlackState {
     pub bot_token: String,
     pub db: PgPool,
     pub oauth_client: BasicClient,
+    pub base_url: String,
 }
 
 /// Handle Slack events webhook
@@ -146,6 +147,32 @@ async fn process_mention(state: SlackState, mention: MentionEvent) -> Result<(),
         thread_ts = %mention.thread_ts,
         "Processing mention in background"
     );
+
+    // Check if this is a "connect" command
+    let text_lower = mention.text.to_lowercase();
+    if text_lower.contains("connect") {
+        tracing::info!("Detected 'connect' command, sending OAuth link");
+
+        // Build OAuth URL
+        let oauth_url = format!(
+            "{}/spotify/connect?slack_workspace_id={}&slack_user_id={}",
+            state.base_url, mention.workspace_id, mention.user_id
+        );
+
+        // Send message with OAuth link
+        let message = format!("Click here to connect your Spotify account: {}", oauth_url);
+
+        post_message(
+            &state.bot_token,
+            &mention.channel_id,
+            &message,
+            Some(&mention.thread_ts),
+        )
+        .await?;
+
+        tracing::info!("Sent OAuth connection link to user");
+        return Ok(());
+    }
 
     // Fetch thread messages to find Spotify links
     let messages =
@@ -356,6 +383,7 @@ mod tests {
             bot_token: "xoxb-test-token".to_string(),
             db,
             oauth_client: build_oauth_client(&config),
+            base_url: "http://localhost:3000".to_string(),
         }
     }
 
