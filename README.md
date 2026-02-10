@@ -323,6 +323,8 @@ GitHub Actions workflow (`.github/workflows/ci.yml`):
 
 ## Documentation
 
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Production deployment guide (Fly.io, Railway, Docker)
+- **[TESTING.md](./TESTING.md)** - Testing guide and manual test checklists
 - **[PLAN.md](./PLAN.md)** - Detailed implementation plan and roadmap
 - **[AGENTS.md](./AGENTS.md)** - Coding standards and best practices
 
