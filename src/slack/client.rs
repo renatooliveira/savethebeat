@@ -165,4 +165,69 @@ pub async fn add_reaction(
     Ok(())
 }
 
+/// Post a message to a Slack channel or DM
+///
+/// Calls Slack's `chat.postMessage` API to send a message.
+/// Used for sending OAuth connection links and other user notifications.
+///
+/// # Arguments
+/// * `bot_token` - Slack bot token (xoxb-...)
+/// * `channel_id` - Channel ID or user ID (for DMs)
+/// * `text` - Message text (supports Slack formatting)
+///
+/// # Returns
+/// Ok(()) if message was posted successfully
+///
+/// # Errors
+/// - `SlackApi` if the API call fails or returns an error
+pub async fn post_message(bot_token: &str, channel_id: &str, text: &str) -> Result<(), AppError> {
+    tracing::info!(channel_id = channel_id, "Posting message to Slack");
+
+    let client = reqwest::Client::new();
+    let url = "https://slack.com/api/chat.postMessage";
+
+    let payload = serde_json::json!({
+        "channel": channel_id,
+        "text": text,
+    });
+
+    let response = client
+        .post(url)
+        .bearer_auth(bot_token)
+        .json(&payload)
+        .send()
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to call Slack API: {:?}", e);
+            AppError::SlackApi(format!("Failed to call chat.postMessage: {}", e))
+        })?;
+
+    let api_response: serde_json::Value = response.json().await.map_err(|e| {
+        tracing::error!("Failed to parse Slack API response: {:?}", e);
+        AppError::SlackApi(format!("Failed to parse response: {}", e))
+    })?;
+
+    let ok = api_response["ok"].as_bool().unwrap_or(false);
+    if !ok {
+        let error_msg = api_response["error"]
+            .as_str()
+            .unwrap_or("Unknown error")
+            .to_string();
+
+        tracing::error!(
+            channel_id = channel_id,
+            error = error_msg,
+            "Slack API returned error"
+        );
+        return Err(AppError::SlackApi(format!(
+            "chat.postMessage failed: {}",
+            error_msg
+        )));
+    }
+
+    tracing::info!(channel_id = channel_id, "Successfully posted message");
+
+    Ok(())
+}
+
 // Note: Actual API testing would require mocking or integration tests with real Slack API

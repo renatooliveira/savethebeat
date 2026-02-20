@@ -1,8 +1,10 @@
 /target
 .env
+.env.production
 .DS_Store
 *.swp
 *.swo
 *~
 .idea/
 .vscode/
+.opencode/

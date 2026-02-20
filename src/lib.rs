@@ -44,6 +44,7 @@ pub async fn run(config: config::Config) -> anyhow::Result<()> {
             bot_token: bot_token.clone(),
             db: db.clone(),
             oauth_client: oauth_client.clone(),
+            base_url: config.base_url.clone(),
         };
 
         let slack_router = routes::slack_routes().with_state(slack_state);

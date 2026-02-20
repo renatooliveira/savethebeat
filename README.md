@@ -8,6 +8,13 @@ When users share Spotify links in Slack conversations, they can mention `@saveth
 
 ## How It Works
 
+### First Time Setup
+1. **Connect your Spotify account** by typing `@savethebeat connect` in any Slack channel
+2. **Check your DMs** - the bot will send you a private message with the OAuth link
+3. **Click the link** and authorize the app on Spotify
+4. **Done!** You're ready to save tracks
+
+### Saving Tracks
 1. **Share a Spotify track** in a Slack thread
 2. **Mention the bot** with `@savethebeat`
 3. **Bot saves the track** to your Spotify Liked Songs
@@ -16,9 +23,13 @@ When users share Spotify links in Slack conversations, they can mention `@saveth
    - ♻️ Track already saved (no duplicate)
    - ❌ Error occurred (no link found, auth issue, etc.)
 
-**Example:**
+**Examples:**
 ```
-[Slack Thread]
+[First Time - Connect Spotify]
+User: @savethebeat connect
+Bot: [Sends DM] Click here to connect your Spotify account: https://your-domain.com/spotify/connect?...
+
+[Saving a Track]
 Alice: Check out this song! https://open.spotify.com/track/3n3Ppam7vgaVa1iaRUc9Lp
 Bob: @savethebeat
 [Bot adds ✅ reaction]
@@ -37,6 +48,7 @@ Bob: @savethebeat
 
 **Slack Integration (Phase 2):**
 - ✅ **Event Webhook** - Receive and process Slack app_mention events
+- ✅ **Connect Command** - Type `@savethebeat connect` to receive OAuth link via DM
 - ✅ **Signature Verification** - HMAC-SHA256 signature verification with replay protection
 - ✅ **Thread Resolution** - Fetch all messages in a thread via Slack API
 - ✅ **Optional Configuration** - Slack integration enabled only when credentials are configured
