@@ -1,0 +1,49 @@
+name: savethebeat
+services:
+  - name: savethebeat
+    github:
+      repo: renatooliveira/savethebeat
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: Dockerfile
+    http_port: 8080
+    instance_size_slug: basic-xxs
+    instance_count: 1
+    health_check:
+      http_path: /health
+    envs:
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${db.DATABASE_URL}
+      - key: PORT
+        scope: RUN_TIME
+        value: "8080"
+      - key: HOST
+        scope: RUN_TIME
+        value: "0.0.0.0"
+      - key: RUST_LOG
+        scope: RUN_TIME
+        value: "info,savethebeat=debug"
+      - key: SPOTIFY_CLIENT_ID
+        scope: RUN_TIME
+        type: SECRET
+      - key: SPOTIFY_CLIENT_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: SPOTIFY_REDIRECT_URI
+        scope: RUN_TIME
+        type: SECRET
+      - key: BASE_URL
+        scope: RUN_TIME
+        type: SECRET
+      - key: SLACK_SIGNING_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: SLACK_BOT_TOKEN
+        scope: RUN_TIME
+        type: SECRET
+databases:
+  - name: db
+    engine: PG
+    production: false
+    version: "16"
